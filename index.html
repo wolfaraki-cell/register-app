@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>ثبت اطلاعات پذیرنده</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link rel="stylesheet"
+href="https://unpkg.com/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.css">
+
+<script src="https://unpkg.com/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.js"></script>
+<div class="max-w-3xl mx-auto p-4">
+  <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+
+    <div class="bg-green-600 text-white p-6 text-center">
+      <h1 class="text-3xl font-bold">ثبت درخواست کارتخوان</h1>
+      <p class="mt-2 text-sm">
+        لطفاً اطلاعات را با دقت وارد نمایید
+      </p>
+    </div>
+
+    <div class="p-6">
+      <!-- فرم -->
+    </div>
+
+  </div>
+</div>
+
+<style>
+.input{
+width:100%;
+padding:14px;
+border:1px solid #d1d5db;
+border-radius:14px;
+margin-bottom:12px;
+transition:all .2s;
+background:#fff;
+}
+
+.input:focus{
+outline:none;
+border-color:#16a34a;
+box-shadow:0 0 0 4px rgba(22,163,74,.15);
+}
+</style>
+
+</head>
+<body class="bg-gray-100">
+
+<div class="max-w-2xl mx-auto p-4">
+
+<div class="bg-white p-5 rounded-2xl shadow">
+
+<h1 class="text-center text-2xl font-bold mb-5">
+فرم ثبت نام
+</h1>
+
+<input id="full_name" class="input" placeholder="نام و نام خانوادگی">
+
+<input id="national_code" class="input" placeholder="کد ملی">
+
+<input id="birth_date"
+data-jdp
+class="input"
+placeholder="تاریخ تولد">
+
+<input id="mobile_number" class="input" placeholder="شماره موبایل">
+
+<input id="phone_number" class="input" placeholder="تلفن ثابت">
+
+<input id="shop_name" class="input" placeholder="نام فروشگاه">
+
+<input id="business_type" class="input" placeholder="صنف فعالیت">
+
+<select id="device_type" class="input">
+<option value="">نوع دستگاه</option>
+<option value="سیار">سیار</option>
+<option value="ثابت تلفنی">ثابت تلفنی</option>
+<option value="اندرویدی">اندرویدی</option>
+</select>
+
+<input id="postal_code" class="input" placeholder="کد پستی">
+
+<input id="tax_code" class="input" placeholder="کد مالیاتی">
+
+<input id="main_bank_name" class="input" placeholder="نام بانک اصلی">
+
+<input id="main_sheba" class="input" placeholder="شماره شبا اصلی">
+
+<input id="main_branch_name" class="input" placeholder="نام شعبه بانک">
+
+<textarea
+id="shop_address"
+class="input"
+placeholder="آدرس فروشگاه"></textarea>
+
+<input id="backup_sheba" class="input" placeholder="شبای پشتیبان">
+
+<input id="backup_bank_name" class="input" placeholder="بانک شبای پشتیبان">
+
+<input id="referrer_name" class="input" placeholder="نام معرف">
+
+<input id="marketer" class="input" placeholder="نام بازاریاب">
+
+<label class="block mb-2">
+تصویر کارت ملی
+</label>
+
+<input type="file" id="national_card" class="input">
+
+<button
+onclick="submitForm()"
+class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold transition">
+ثبت اطلاعات
+</button>
+
+<p id="msg" class="text-center mt-4"></p>
+
+</div>
+</div>
+
+<script>
+
+jalaliDatepicker.startWatch();
+
+const SUPABASE_URL =
+"https://ostreoiqftpcittfdzbi.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_0tfxdJw3yNU_oJ3H7ooGdA_ZTwJ-556";
+
+const { createClient } = supabase;
+
+const db = createClient(
+SUPABASE_URL,
+SUPABASE_KEY
+);
+
+function validNationalCode(code){
+
+if(!/^\d{10}$/.test(code))
+return false;
+
+let sum=0;
+
+for(let i=0;i<9;i++){
+
+sum+=parseInt(code.charAt(i))*(10-i);
+
+}
+
+let r=sum%11;
+
+let c=parseInt(code.charAt(9));
+
+return(
+(r<2 && c===r) ||
+(r>=2 && c===11-r)
+);
+
+}
+
+async function submitForm(){
+
+const msg=document.getElementById("msg");
+
+msg.innerHTML="در حال ثبت...";
+
+const nationalCode=
+document.getElementById("national_code").value.trim();
+
+if(!validNationalCode(nationalCode)){
+
+msg.innerHTML="کد ملی معتبر نیست";
+
+return;
+
+}
+
+const postalCode=
+document.getElementById("postal_code").value.trim();
+
+if(postalCode.length!==10){
+
+msg.innerHTML="کد پستی باید 10 رقم باشد";
+
+return;
+
+}
+
+let imageUrl="";
+
+const file=
+document.getElementById("national_card").files[0];
+
+if(file){
+
+const fileName=
+Date.now()+"_"+file.name;
+
+const { error:uploadError }=
+await db.storage
+.from("national-cards")
+.upload(fileName,file);
+
+if(uploadError){
+
+msg.innerHTML=
+"خطا در آپلود تصویر";
+
+return;
+
+}
+
+imageUrl=
+db.storage
+.from("national-cards")
+.getPublicUrl(fileName)
+.data.publicUrl;
+
+}
+
+const { error }=
+await db
+.from("national_cards")
+.insert([{
+
+full_name:
+document.getElementById("full_name").value,
+
+national_code:
+nationalCode,
+
+birth_date:
+document.getElementById("birth_date").value,
+
+mobile_number:
+document.getElementById("mobile_number").value,
+
+phone_number:
+document.getElementById("phone_number").value,
+
+shop_name:
+document.getElementById("shop_name").value,
+
+business_type:
+document.getElementById("business_type").value,
+
+device_type:
+document.getElementById("device_type").value,
+
+postal_code:
+postalCode,
+
+tax_code:
+document.getElementById("tax_code").value,
+
+main_bank_name:
+document.getElementById("main_bank_name").value,
+
+main_sheba:
+document.getElementById("main_sheba").value,
+
+main_branch_name:
+document.getElementById("main_branch_name").value,
+
+shop_address:
+document.getElementById("shop_address").value,
+
+backup_sheba:
+document.getElementById("backup_sheba").value,
+
+backup_bank_name:
+document.getElementById("backup_bank_name").value,
+
+referrer_name:
+document.getElementById("referrer_name").value,
+
+marketer:
+document.getElementById("marketer").value,
+
+national_card_image:
+imageUrl,
+
+status:"جدید"
+
+}]);
+
+if(error){
+
+console.log(error);
+
+msg.innerHTML=
+"❌ خطا: "+error.message;
+
+return;
+
+}
+
+msg.innerHTML=
+"✅ اطلاعات با موفقیت ثبت شد";
+
+document
+.querySelectorAll("input,textarea")
+.forEach(x=>{
+
+if(x.type!=="file")
+x.value="";
+
+});
+
+}
+
+</script>
+
+</body>
+</html>
